@@ -11,7 +11,6 @@
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script>
-        // Theme-Speicherung direkt beim Start auslesen (verhindert Aufblitzen)
         (function() {
             try {
                 const savedTheme = localStorage.getItem('pokedex_theme');
@@ -134,10 +133,10 @@
                 <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-3">
                     <div>
                         <span id="regionBadge" class="inline-block px-2.5 py-0.5 rounded-full text-xs font-bold bg-pokeRed-100 dark:bg-pokeRed-950/80 text-pokeRed-600 dark:text-pokeRed-400 mb-1">
-                            Gen 1
+                            Gen 1-9
                         </span>
                         <h2 id="regionTitle" class="text-xl font-extrabold text-slate-900 dark:text-white">
-                            Kanto Dex
+                            National Dex
                         </h2>
                     </div>
 
@@ -225,7 +224,7 @@
                 <div>
                     <h4 class="text-xs font-extrabold uppercase tracking-wider text-slate-400 mb-2 flex items-center gap-1.5">
                         <i data-lucide="map-pin" class="w-4 h-4 text-pokeRed-500"></i>
-                        <span>Fundorte in dieser Region</span>
+                        <span>Fundorte</span>
                     </h4>
                     
                     <div id="modalLocationsLoading" class="hidden text-center py-6">
@@ -254,21 +253,19 @@
 
     <script>
         const POKEDEX_DEFINITIONS = [
-            { id: 'kanto', apiDex: ['kanto'], name: 'Kanto (Rot / Blau / Gelb)', gen: 'Gen 1', versions: ['red', 'blue', 'yellow', 'firered', 'leafgreen', 'lets-go-pikachu', 'lets-go-eevee'] },
-            { id: 'johto', apiDex: ['updated-johto'], name: 'Johto (HeartGold / SoulSilver)', gen: 'Gen 2', versions: ['gold', 'silver', 'crystal', 'heartgold', 'soulsilver'] },
-            { id: 'hoenn', apiDex: ['updated-hoenn'], name: 'Hoenn (Omega Rubin / Alpha Saphir)', gen: 'Gen 3', versions: ['ruby', 'sapphire', 'emerald', 'omega-ruby', 'alpha-sapphire'] },
-            { id: 'sinnoh', apiDex: ['extended-sinnoh'], name: 'Sinnoh (Platin Dex)', gen: 'Gen 4', versions: ['diamond', 'pearl', 'platinum', 'brilliant-diamond', 'shining-pearl'] },
-            { id: 'unova-2', apiDex: ['updated-unica'], name: 'Einall (Schwarz 2 / Weiß 2)', gen: 'Gen 5', versions: ['black', 'white', 'black-2', 'white-2'] },
-            // Kalos ist jetzt zu einem Dex zusammengeschlossen:
-            { id: 'kalos-full', apiDex: ['kalos-central', 'kalos-coastal', 'kalos-mountain'], name: 'Kalos Dex (X / Y)', gen: 'Gen 6', versions: ['x', 'y'] },
-            { id: 'alola', apiDex: ['updated-alola'], name: 'Alola (Ultra Sonne / Ultra Mond)', gen: 'Gen 7', versions: ['sun', 'moon', 'ultra-sun', 'ultra-moon'] },
-            { id: 'galar', apiDex: ['galar'], name: 'Galar Haupt-Dex (Schwert / Schild)', gen: 'Gen 8', versions: ['sword', 'shield'] },
-            { id: 'armor', apiDex: ['armor'], name: 'Galar - Rüstungsinsel', gen: 'Gen 8', versions: ['sword', 'shield'] },
-            { id: 'crown', apiDex: ['crown'], name: 'Galar - Schneelande der Krone', gen: 'Gen 8', versions: ['sword', 'shield'] },
-            { id: 'hisui', apiDex: ['hisui'], name: 'Hisui Dex (Legenden: Arceus)', gen: 'Gen 8.5', versions: ['legends-arceus'] },
-            { id: 'paldea', apiDex: ['paldea'], name: 'Paldea Dex (Karmesin / Purpur)', gen: 'Gen 9', versions: ['scarlet', 'violet'] },
-            { id: 'kitakami', apiDex: ['kitakami'], name: 'Kitakami (Der Grüne Maskenball)', gen: 'Gen 9', versions: ['scarlet', 'violet'] },
-            { id: 'blueberry', apiDex: ['blueberry'], name: 'Indigoblau-Akademie (Die Indigoblaue Scheibe)', gen: 'Gen 9', versions: ['scarlet', 'violet'] }
+            { id: 'national', type: 'national', name: 'National Dex (Alle Gen 1 - 9)', gen: 'Gen 1-9', versions: [] },
+            { id: 'kanto', type: 'pokedex', targets: ['kanto'], name: 'Kanto (Rot / Blau / Gelb)', gen: 'Gen 1', versions: ['red', 'blue', 'yellow', 'firered', 'leafgreen', 'lets-go-pikachu', 'lets-go-eevee'] },
+            { id: 'johto', type: 'pokedex', targets: ['updated-johto'], name: 'Johto (HeartGold / SoulSilver)', gen: 'Gen 2', versions: ['gold', 'silver', 'crystal', 'heartgold', 'soulsilver'] },
+            { id: 'hoenn', type: 'pokedex', targets: ['updated-hoenn'], name: 'Hoenn (Omega Rubin / Alpha Saphir)', gen: 'Gen 3', versions: ['ruby', 'sapphire', 'emerald', 'omega-ruby', 'alpha-sapphire'] },
+            { id: 'sinnoh', type: 'pokedex', targets: ['extended-sinnoh'], name: 'Sinnoh (Platin Dex)', gen: 'Gen 4', versions: ['diamond', 'pearl', 'platinum', 'brilliant-diamond', 'shining-pearl'] },
+            { id: 'unova', type: 'generation', target: '5', name: 'Einall (Schwarz / Weiß)', gen: 'Gen 5', versions: ['black', 'white', 'black-2', 'white-2'] },
+            { id: 'kalos-full', type: 'pokedex', targets: ['kalos-central', 'kalos-coastal', 'kalos-mountain'], name: 'Kalos Dex (X / Y)', gen: 'Gen 6', versions: ['x', 'y'] },
+            { id: 'alola', type: 'pokedex', targets: ['updated-alola'], name: 'Alola (Ultra Sonne / Ultra Mond)', gen: 'Gen 7', versions: ['sun', 'moon', 'ultra-sun', 'ultra-moon'] },
+            { id: 'galar', type: 'pokedex', targets: ['galar'], name: 'Galar Dex (Schwert / Schild)', gen: 'Gen 8', versions: ['sword', 'shield'] },
+            { id: 'hisui', type: 'pokedex', targets: ['hisui'], name: 'Hisui Dex (Legenden: Arceus)', gen: 'Gen 8.5', versions: ['legends-arceus'] },
+            { id: 'paldea', type: 'pokedex', targets: ['paldea'], name: 'Paldea Dex (Karmesin / Purpur)', gen: 'Gen 9', versions: ['scarlet', 'violet'] },
+            { id: 'kitakami', type: 'pokedex', targets: ['kitakami'], name: 'Kitakami (Der Grüne Maskenball)', gen: 'Gen 9', versions: ['scarlet', 'violet'] },
+            { id: 'blueberry', type: 'pokedex', targets: ['blueberry'], name: 'Indigoblau-Akademie (Die Indigoblaue Scheibe)', gen: 'Gen 9', versions: ['scarlet', 'violet'] }
         ];
 
         const apiDexCache = {};
@@ -424,8 +421,8 @@
             }
         }
 
-        async function fetchRegionPokedex(apiDexNames) {
-            const cacheKey = apiDexNames.join('+');
+        async function fetchRegionPokedex(config) {
+            const cacheKey = config.id;
             if (apiDexCache[cacheKey]) return apiDexCache[cacheKey];
 
             loadingContainer.classList.remove('hidden');
@@ -436,21 +433,61 @@
             try {
                 let combinedList = [];
                 let currentRegNo = 1;
+                const seenNatIds = new Set();
 
-                for (const dexName of apiDexNames) {
-                    const response = await fetch(`https://pokeapi.co/api/v2/pokedex/${dexName}`);
-                    if (!response.ok) throw new Error("Netzwerkfehler");
-                    const data = await response.json();
-
-                    const entries = data.pokemon_entries.map(entry => {
-                        const natId = extractNatIdFromUrl(entry.pokemon_species.url);
-                        return {
-                            regNo: currentRegNo++,
-                            natId: natId,
-                            defaultName: entry.pokemon_species.name
-                        };
-                    });
-                    combinedList = combinedList.concat(entries);
+                if (config.type === 'national') {
+                    // Nationaler Pokédex via offiziellem Endpunkt oder direkt über den National-Dex-Endpunkt
+                    const response = await fetch(`https://pokeapi.co/api/v2/pokedex/national`);
+                    if (response.ok) {
+                        const data = await response.json();
+                        data.pokemon_entries.forEach(entry => {
+                            const natId = extractNatIdFromUrl(entry.pokemon_species.url);
+                            if (!seenNatIds.has(natId)) {
+                                seenNatIds.add(natId);
+                                combinedList.push({
+                                    regNo: currentRegNo++,
+                                    natId: natId,
+                                    defaultName: entry.pokemon_species.name
+                                });
+                            }
+                        });
+                    }
+                } else if (config.type === 'generation') {
+                    const response = await fetch(`https://pokeapi.co/api/v2/generation/${config.target}`);
+                    if (response.ok) {
+                        const data = await response.json();
+                        const sortedSpecies = data.pokemon_species.sort((a, b) => extractNatIdFromUrl(a.url) - extractNatIdFromUrl(b.url));
+                        sortedSpecies.forEach(entry => {
+                            const natId = extractNatIdFromUrl(entry.url);
+                            if (!seenNatIds.has(natId)) {
+                                seenNatIds.add(natId);
+                                combinedList.push({
+                                    regNo: currentRegNo++,
+                                    natId: natId,
+                                    defaultName: entry.name
+                                });
+                            }
+                        });
+                    }
+                } else {
+                    for (const dexName of config.targets) {
+                        const response = await fetch(`https://pokeapi.co/api/v2/pokedex/${dexName}`);
+                        if (!response.ok) continue;
+                        const data = await response.json();
+                        if (data && data.pokemon_entries) {
+                            data.pokemon_entries.forEach(entry => {
+                                const natId = extractNatIdFromUrl(entry.pokemon_species.url);
+                                if (!seenNatIds.has(natId)) {
+                                    seenNatIds.add(natId);
+                                    combinedList.push({
+                                        regNo: currentRegNo++,
+                                        natId: natId,
+                                        defaultName: entry.pokemon_species.name
+                                    });
+                                }
+                            });
+                        }
+                    }
                 }
 
                 apiDexCache[cacheKey] = combinedList;
@@ -482,8 +519,16 @@
 
         function filterEncountersForRegion(rawEncounters, targetVersions) {
             if (!rawEncounters || !Array.isArray(rawEncounters)) return [];
+            if (!targetVersions || targetVersions.length === 0) {
+                // Für National Dex alle Fundorte anzeigen
+                return rawEncounters.slice(0, 5).map(item => ({
+                    area: formatName(item.location_area.name.replace(/-/g, ' ')),
+                    versions: item.version_details.map(v => formatName(v.version.name.replace(/-/g, ' '))).join(', ')
+                }));
+            }
+
             const results = [];
-            const allowedSet = new Set(targetVersions || []);
+            const allowedSet = new Set(targetVersions);
 
             rawEncounters.forEach(item => {
                 const matchingVersions = item.version_details
@@ -627,7 +672,7 @@
             const config = POKEDEX_DEFINITIONS.find(r => r.id === regionId);
             if (!config) return;
             currentRegionConfig = config;
-            currentRegionList = await fetchRegionPokedex(config.apiDex);
+            currentRegionList = await fetchRegionPokedex(config);
             await renderGrid();
         }
 
@@ -677,14 +722,14 @@
                         <i data-lucide="compass" class="w-4 h-4 text-pokeRed-500 shrink-0 mt-0.5"></i>
                         <div>
                             <span class="font-bold block capitalize text-slate-900 dark:text-white">${enc.area}</span>
-                            <span class="text-[11px] text-slate-400">Editionen: ${enc.versions}</span>
+                            <span class="text-[11px] text-slate-450">Editionen: ${enc.versions}</span>
                         </div>
                     </div>
                 `).join('');
             } else {
                 modalLocations.innerHTML = `
                     <div class="text-xs text-slate-500 bg-slate-50 dark:bg-slate-800/40 p-3 rounded-xl border border-slate-100 dark:border-slate-800 text-center font-medium">
-                        Keine Wild-Fundorte in den Editionen dieser Region verzeichnet (z. B. Tausch, Entwicklung, Starter oder Event).
+                        Keine Wild-Fundorte verzeichnet (z. B. Tausch, Entwicklung, Starter oder Event).
                     </div>
                 `;
             }
