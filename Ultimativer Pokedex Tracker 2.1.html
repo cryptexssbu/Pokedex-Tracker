@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="de" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PokéDex Master Tracker</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        // Theme-Speicherung direkt beim Start auslesen (verhindert Aufblitzen)
+        (function() {
+            try {
+                const savedTheme = localStorage.getItem('pokedex_theme');
+                if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                    document.documentElement.classList.add('dark');
+                } else {
+                    document.documentElement.classList.remove('dark');
+                }
+            } catch (e) {}
+        })();
+
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'sans-serif'],
+                    },
+                    colors: {
+                        pokeRed: {
+                            50: '#fff1f2',
+                            100: '#ffe4e6',
+                            500: '#ee1515',
+                            600: '#cc0000',
+                            700: '#990000',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.05); }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.2); border-radius: 9999px; }
+        .dark .custom-scrollbar::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.05); }
+        .dark .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); }
+    </style>
+</head>
+<body class="bg-slate-100 dark:bg-slate-950 text-slate-800 dark:text-slate-100 min-h-full font-sans transition-colors duration-200">
+
+    <div id="app" class="min-h-screen flex flex-col">
+        <!-- Header -->
+        <header class="sticky top-0 z-30 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 shadow-sm">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+                <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                    
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-pokeRed-600 to-rose-500 flex items-center justify-center text-white shadow-md shadow-pokeRed-500/30">
+                                <div class="w-4 h-4 rounded-full border-2 border-white bg-slate-900 relative">
+                                    <div class="absolute inset-0 m-auto w-1.5 h-1.5 rounded-full bg-white"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <h1 class="text-xl font-extrabold tracking-tight bg-gradient-to-r from-pokeRed-600 to-rose-500 bg-clip-text text-transparent">
+                                    PokéDex Tracker
+                                </h1>
+                                <p class="text-xs text-slate-500 dark:text-slate-400 font-medium">Live PokéAPI Daten • Gen 1 - 9</p>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-2 md:hidden">
+                            <button id="themeToggleBtnMobile" class="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                                <i data-lucide="moon" class="w-5 h-5 hidden dark:block"></i>
+                                <i data-lucide="sun" class="w-5 h-5 block dark:hidden"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-wrap items-center gap-3">
+                        <!-- Region Dropdown -->
+                        <div class="relative flex-1 sm:flex-initial min-w-[240px]">
+                            <label for="regionSelect" class="sr-only">Region / Spiel wählen</label>
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                                <i data-lucide="gamepad-2" class="w-4 h-4"></i>
+                            </div>
+                            <select id="regionSelect" class="w-full pl-9 pr-8 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-pokeRed-500 transition cursor-pointer">
+                            </select>
+                        </div>
+
+                        <!-- Sprach Dropdown -->
+                        <div class="relative min-w-[130px]">
+                            <label for="langSelect" class="sr-only">Sprache wählen</label>
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                                <i data-lucide="languages" class="w-4 h-4"></i>
+                            </div>
+                            <select id="langSelect" class="w-full pl-9 pr-8 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-pokeRed-500 transition cursor-pointer">
+                                <option value="de">Deutsch</option>
+                                <option value="en">English</option>
+                            </select>
+                        </div>
+
+                        <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
+                            <button id="exportBtn" class="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-semibold transition">
+                                <i data-lucide="download" class="w-4 h-4"></i>
+                                <span>Export</span>
+                            </button>
+                            <label id="importBtnLabel" class="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-semibold transition cursor-pointer">
+                                <i data-lucide="upload" class="w-4 h-4"></i>
+                                <span>Import</span>
+                                <input type="file" id="importInput" accept=".json" class="hidden">
+                            </label>
+                            <button id="themeToggleBtn" class="hidden md:flex p-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-300 transition">
+                                <i data-lucide="moon" class="w-4 h-4 hidden dark:block"></i>
+                                <i data-lucide="sun" class="w-4 h-4 block dark:hidden"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+            <!-- Progress Dashboard -->
+            <div class="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm transition">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-3">
+                    <div>
+                        <span id="regionBadge" class="inline-block px-2.5 py-0.5 rounded-full text-xs font-bold bg-pokeRed-100 dark:bg-pokeRed-950/80 text-pokeRed-600 dark:text-pokeRed-400 mb-1">
+                            Gen 1
+                        </span>
+                        <h2 id="regionTitle" class="text-xl font-extrabold text-slate-900 dark:text-white">
+                            Kanto Dex
+                        </h2>
+                    </div>
+
+                    <div class="flex items-center gap-4 bg-slate-50 dark:bg-slate-800/60 p-3 rounded-xl border border-slate-100 dark:border-slate-800">
+                        <div class="text-center px-2">
+                            <span class="block text-xs text-slate-500 font-medium">Gefangen</span>
+                            <span id="caughtCountText" class="text-lg font-bold text-pokeRed-600 dark:text-pokeRed-400">0</span>
+                        </div>
+                        <div class="h-8 w-[1px] bg-slate-200 dark:bg-slate-700"></div>
+                        <div class="text-center px-2">
+                            <span class="block text-xs text-slate-500 font-medium">Gesamt</span>
+                            <span id="totalCountText" class="text-lg font-bold text-slate-700 dark:text-slate-300">0</span>
+                        </div>
+                        <div class="h-8 w-[1px] bg-slate-200 dark:bg-slate-700"></div>
+                        <div class="text-center px-2">
+                            <span class="block text-xs text-slate-500 font-medium">Fortschritt</span>
+                            <span id="percentText" class="text-lg font-bold text-emerald-600 dark:text-emerald-400">0%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="w-full bg-slate-100 dark:bg-slate-800 h-3.5 rounded-full overflow-hidden p-0.5 border border-slate-200/50 dark:border-slate-700/50">
+                    <div id="progressBar" class="h-full bg-gradient-to-r from-pokeRed-500 to-emerald-500 rounded-full transition-all duration-500 w-0"></div>
+                </div>
+            </div>
+
+            <!-- Toolbar -->
+            <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+                <div class="relative flex-1">
+                    <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                    <input type="text" id="searchInput" placeholder="Pokémon nach Name oder Dex-Nummer suchen..." class="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-pokeRed-500 shadow-sm transition">
+                </div>
+
+                <div class="flex items-center gap-1 bg-white dark:bg-slate-900 p-1 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                    <button data-filter="all" class="filter-btn flex-1 sm:flex-none px-3 py-1.5 rounded-lg text-xs font-semibold transition bg-pokeRed-500 text-white shadow-sm">
+                        Alle
+                    </button>
+                    <button data-filter="caught" class="filter-btn flex-1 sm:flex-none px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+                        Gefangen
+                    </button>
+                    <button data-filter="uncaught" class="filter-btn flex-1 sm:flex-none px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+                        Offen
+                    </button>
+                </div>
+            </div>
+
+            <!-- Loader -->
+            <div id="loadingContainer" class="flex flex-col items-center justify-center py-16 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                <div class="w-12 h-12 border-4 border-pokeRed-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+                <p id="loadingText" class="text-sm font-bold text-slate-600 dark:text-slate-300">Lade Dex-Daten...</p>
+            </div>
+
+            <!-- Grid -->
+            <div id="pokemonGrid" class="hidden grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4"></div>
+
+            <!-- Empty State -->
+            <div id="emptyState" class="hidden text-center py-12 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800">
+                <i data-lucide="ghost" class="w-12 h-12 text-slate-400 mx-auto mb-3"></i>
+                <h3 class="text-base font-bold text-slate-700 dark:text-slate-300">Keine Pokémon gefunden</h3>
+                <p class="text-xs text-slate-500">Passe deine Suche oder deinen Filter an.</p>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- Modal Popup -->
+    <div id="locationModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm hidden transition-opacity">
+        <div class="bg-white dark:bg-slate-900 rounded-2xl max-w-md w-full overflow-hidden shadow-2xl border border-slate-200 dark:border-slate-800 transform transition-all scale-95 opacity-0 modal-container">
+            
+            <div class="relative bg-gradient-to-r from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-850 p-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <img id="modalSprite" src="" alt="" class="w-14 h-14 object-contain filter drop-shadow">
+                    <div>
+                        <span id="modalDexNum" class="text-xs font-bold text-pokeRed-600 dark:text-pokeRed-400">#001</span>
+                        <h3 id="modalName" class="text-lg font-extrabold capitalize text-slate-900 dark:text-white">Bisasam</h3>
+                        <span id="modalNatId" class="text-[11px] text-slate-400 block font-medium">National-ID: #1</span>
+                    </div>
+                </div>
+                <button id="closeModalBtn" class="p-1.5 rounded-lg bg-white/80 dark:bg-slate-800/80 text-slate-500 hover:text-slate-800 dark:hover:text-white transition">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <div class="p-5 space-y-4 max-h-[60vh] overflow-y-auto custom-scrollbar">
+                <div>
+                    <h4 class="text-xs font-extrabold uppercase tracking-wider text-slate-400 mb-2 flex items-center gap-1.5">
+                        <i data-lucide="map-pin" class="w-4 h-4 text-pokeRed-500"></i>
+                        <span>Fundorte in dieser Region</span>
+                    </h4>
+                    
+                    <div id="modalLocationsLoading" class="hidden text-center py-6">
+                        <div class="w-6 h-6 border-2 border-pokeRed-500 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+                        <span class="text-xs text-slate-500">Abrufen von PokéAPI...</span>
+                    </div>
+
+                    <div id="modalLocations" class="space-y-2"></div>
+                </div>
+            </div>
+
+            <div class="p-4 bg-slate-50 dark:bg-slate-800/40 border-t border-slate-200 dark:border-slate-800 flex justify-end">
+                <button id="modalCatchToggleBtn" class="w-full py-2.5 px-4 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition">
+                    <i data-lucide="check-circle" class="w-4 h-4"></i>
+                    <span id="modalCatchToggleText">Als Gefangen markieren</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-5 right-5 z-50 flex items-center gap-2 px-4 py-3 bg-slate-900 text-white dark:bg-white dark:text-slate-900 rounded-xl shadow-xl text-xs font-bold transition-all transform translate-y-10 opacity-0 pointer-events-none">
+        <i data-lucide="info" class="w-4 h-4 text-emerald-400"></i>
+        <span id="toastMsg">Benachrichtigung</span>
+    </div>
+
+    <script>
+        const POKEDEX_DEFINITIONS = [
+            { id: 'kanto', apiDex: ['kanto'], name: 'Kanto (Rot / Blau / Gelb)', gen: 'Gen 1', versions: ['red', 'blue', 'yellow', 'firered', 'leafgreen', 'lets-go-pikachu', 'lets-go-eevee'] },
+            { id: 'johto', apiDex: ['updated-johto'], name: 'Johto (HeartGold / SoulSilver)', gen: 'Gen 2', versions: ['gold', 'silver', 'crystal', 'heartgold', 'soulsilver'] },
+            { id: 'hoenn', apiDex: ['updated-hoenn'], name: 'Hoenn (Omega Rubin / Alpha Saphir)', gen: 'Gen 3', versions: ['ruby', 'sapphire', 'emerald', 'omega-ruby', 'alpha-sapphire'] },
+            { id: 'sinnoh', apiDex: ['extended-sinnoh'], name: 'Sinnoh (Platin Dex)', gen: 'Gen 4', versions: ['diamond', 'pearl', 'platinum', 'brilliant-diamond', 'shining-pearl'] },
+            { id: 'unova-2', apiDex: ['updated-unica'], name: 'Einall (Schwarz 2 / Weiß 2)', gen: 'Gen 5', versions: ['black', 'white', 'black-2', 'white-2'] },
+            // Kalos ist jetzt zu einem Dex zusammengeschlossen:
+            { id: 'kalos-full', apiDex: ['kalos-central', 'kalos-coastal', 'kalos-mountain'], name: 'Kalos Dex (X / Y)', gen: 'Gen 6', versions: ['x', 'y'] },
+            { id: 'alola', apiDex: ['updated-alola'], name: 'Alola (Ultra Sonne / Ultra Mond)', gen: 'Gen 7', versions: ['sun', 'moon', 'ultra-sun', 'ultra-moon'] },
+            { id: 'galar', apiDex: ['galar'], name: 'Galar Haupt-Dex (Schwert / Schild)', gen: 'Gen 8', versions: ['sword', 'shield'] },
+            { id: 'armor', apiDex: ['armor'], name: 'Galar - Rüstungsinsel', gen: 'Gen 8', versions: ['sword', 'shield'] },
+            { id: 'crown', apiDex: ['crown'], name: 'Galar - Schneelande der Krone', gen: 'Gen 8', versions: ['sword', 'shield'] },
+            { id: 'hisui', apiDex: ['hisui'], name: 'Hisui Dex (Legenden: Arceus)', gen: 'Gen 8.5', versions: ['legends-arceus'] },
+            { id: 'paldea', apiDex: ['paldea'], name: 'Paldea Dex (Karmesin / Purpur)', gen: 'Gen 9', versions: ['scarlet', 'violet'] },
+            { id: 'kitakami', apiDex: ['kitakami'], name: 'Kitakami (Der Grüne Maskenball)', gen: 'Gen 9', versions: ['scarlet', 'violet'] },
+            { id: 'blueberry', apiDex: ['blueberry'], name: 'Indigoblau-Akademie (Die Indigoblaue Scheibe)', gen: 'Gen 9', versions: ['scarlet', 'violet'] }
+        ];
+
+        const apiDexCache = {};
+        const apiEncounterCache = {};
+        const germanNamesCache = {};
+
+        let currentRegionConfig = POKEDEX_DEFINITIONS[0];
+        let currentRegionList = [];
+        let currentFilter = 'all';
+        let searchQuery = '';
+        let caughtState = {};
+        let currentLang = 'de';
+
+        const regionSelect = document.getElementById('regionSelect');
+        const langSelect = document.getElementById('langSelect');
+        const regionTitle = document.getElementById('regionTitle');
+        const regionBadge = document.getElementById('regionBadge');
+        const pokemonGrid = document.getElementById('pokemonGrid');
+        const loadingContainer = document.getElementById('loadingContainer');
+        const loadingText = document.getElementById('loadingText');
+        const emptyState = document.getElementById('emptyState');
+        const searchInput = document.getElementById('searchInput');
+        const progressBar = document.getElementById('progressBar');
+        const caughtCountText = document.getElementById('caughtCountText');
+        const totalCountText = document.getElementById('totalCountText');
+        const percentText = document.getElementById('percentText');
+        const filterBtns = document.querySelectorAll('.filter-btn');
+
+        const locationModal = document.getElementById('locationModal');
+        const closeModalBtn = document.getElementById('closeModalBtn');
+        const modalSprite = document.getElementById('modalSprite');
+        const modalDexNum = document.getElementById('modalDexNum');
+        const modalName = document.getElementById('modalName');
+        const modalNatId = document.getElementById('modalNatId');
+        const modalLocations = document.getElementById('modalLocations');
+        const modalLocationsLoading = document.getElementById('modalLocationsLoading');
+        const modalCatchToggleBtn = document.getElementById('modalCatchToggleBtn');
+        const modalCatchToggleText = document.getElementById('modalCatchToggleText');
+
+        let activeModalPokemon = null;
+
+        function loadState() {
+            try {
+                const savedState = localStorage.getItem('pokedex_api_tracker_state');
+                if (savedState) caughtState = JSON.parse(savedState);
+
+                const savedLang = localStorage.getItem('pokedex_lang');
+                if (savedLang) currentLang = savedLang;
+            } catch (e) {
+                console.error("Fehler beim Laden:", e);
+            }
+        }
+
+        function saveState() {
+            try {
+                localStorage.setItem('pokedex_api_tracker_state', JSON.stringify(caughtState));
+            } catch (e) {
+                console.error("Fehler beim Speichern:", e);
+            }
+        }
+
+        function saveLang(lang) {
+            try {
+                localStorage.setItem('pokedex_lang', lang);
+            } catch (e) {
+                console.error("Fehler beim Speichern der Sprache:", e);
+            }
+        }
+
+        function toggleTheme() {
+            const isDark = document.documentElement.classList.toggle('dark');
+            try {
+                localStorage.setItem('pokedex_theme', isDark ? 'dark' : 'light');
+            } catch (e) {
+                console.error("Fehler beim Speichern des Themes:", e);
+            }
+        }
+
+        function exportData() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(caughtState, null, 2));
+            const anchor = document.createElement('a');
+            anchor.setAttribute("href", dataStr);
+            anchor.setAttribute("download", `pokedex_backup_${new Date().toISOString().slice(0,10)}.json`);
+            document.body.appendChild(anchor);
+            anchor.click();
+            anchor.remove();
+            showToast("Backup heruntergeladen!");
+        }
+
+        function importData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const imported = JSON.parse(e.target.result);
+                    if (typeof imported === 'object') {
+                        caughtState = { ...caughtState, ...imported };
+                        saveState();
+                        renderGrid();
+                        updateProgress();
+                        showToast("Fortschritt importiert!");
+                    }
+                } catch (err) {
+                    showToast("Ungültige JSON-Datei!");
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toastMsg').textContent = message;
+            toast.classList.remove('translate-y-10', 'opacity-0', 'pointer-events-none');
+            toast.classList.add('translate-y-0', 'opacity-100');
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-10', 'opacity-0', 'pointer-events-none');
+            }, 3000);
+        }
+
+        function extractNatIdFromUrl(url) {
+            const parts = url.split('/').filter(Boolean);
+            return parseInt(parts[parts.length - 1], 10);
+        }
+
+        function getSpriteUrl(natId) {
+            return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${natId}.png`;
+        }
+
+        function getFallbackSprite(natId) {
+            return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${natId}.png`;
+        }
+
+        function formatName(name) {
+            if (!name) return '';
+            return name.charAt(0).toUpperCase() + name.slice(1);
+        }
+
+        async function fetchGermanName(natId, defaultName) {
+            if (germanNamesCache[natId]) return germanNamesCache[natId];
+            try {
+                const res = await fetch(`https://pokeapi.co/api/v2/pokemon-species/${natId}`);
+                if (!res.ok) return formatName(defaultName);
+                const data = await res.json();
+                const deEntry = data.names.find(n => n.language.name === 'de');
+                const name = deEntry ? deEntry.name : formatName(defaultName);
+                germanNamesCache[natId] = name;
+                return name;
+            } catch (err) {
+                return formatName(defaultName);
+            }
+        }
+
+        async function fetchRegionPokedex(apiDexNames) {
+            const cacheKey = apiDexNames.join('+');
+            if (apiDexCache[cacheKey]) return apiDexCache[cacheKey];
+
+            loadingContainer.classList.remove('hidden');
+            pokemonGrid.classList.add('hidden');
+            emptyState.classList.add('hidden');
+            loadingText.textContent = `Lade Dex-Daten...`;
+
+            try {
+                let combinedList = [];
+                let currentRegNo = 1;
+
+                for (const dexName of apiDexNames) {
+                    const response = await fetch(`https://pokeapi.co/api/v2/pokedex/${dexName}`);
+                    if (!response.ok) throw new Error("Netzwerkfehler");
+                    const data = await response.json();
+
+                    const entries = data.pokemon_entries.map(entry => {
+                        const natId = extractNatIdFromUrl(entry.pokemon_species.url);
+                        return {
+                            regNo: currentRegNo++,
+                            natId: natId,
+                            defaultName: entry.pokemon_species.name
+                        };
+                    });
+                    combinedList = combinedList.concat(entries);
+                }
+
+                apiDexCache[cacheKey] = combinedList;
+                return combinedList;
+            } catch (err) {
+                console.error(err);
+                showToast("Fehler beim Laden der Dex-Daten.");
+                return [];
+            } finally {
+                loadingContainer.classList.add('hidden');
+                pokemonGrid.classList.remove('hidden');
+            }
+        }
+
+        async function fetchPokemonEncounters(natId) {
+            if (apiEncounterCache[natId]) return apiEncounterCache[natId];
+
+            try {
+                const response = await fetch(`https://pokeapi.co/api/v2/pokemon/${natId}/encounters`);
+                if (!response.ok) return [];
+                const data = await response.json();
+                apiEncounterCache[natId] = data;
+                return data;
+            } catch (err) {
+                console.error(err);
+                return [];
+            }
+        }
+
+        function filterEncountersForRegion(rawEncounters, targetVersions) {
+            if (!rawEncounters || !Array.isArray(rawEncounters)) return [];
+            const results = [];
+            const allowedSet = new Set(targetVersions || []);
+
+            rawEncounters.forEach(item => {
+                const matchingVersions = item.version_details
+                    .filter(v => allowedSet.has(v.version.name))
+                    .map(v => formatName(v.version.name.replace(/-/g, ' ')));
+
+                if (matchingVersions.length > 0) {
+                    const areaName = item.location_area.name.replace(/-/g, ' ');
+                    results.push({
+                        area: formatName(areaName),
+                        versions: matchingVersions.join(', ')
+                    });
+                }
+            });
+            return results;
+        }
+
+        function initRegionsDropdown() {
+            regionSelect.innerHTML = '';
+            POKEDEX_DEFINITIONS.forEach(reg => {
+                const opt = document.createElement('option');
+                opt.value = reg.id;
+                opt.textContent = `${reg.gen}: ${reg.name}`;
+                regionSelect.appendChild(opt);
+            });
+            regionSelect.value = currentRegionConfig.id;
+        }
+
+        function updateProgress() {
+            const total = currentRegionList.length;
+            let caughtCount = 0;
+
+            currentRegionList.forEach(p => {
+                const key = `${currentRegionConfig.id}-${p.regNo}`;
+                if (caughtState[key]) caughtCount++;
+            });
+
+            const percent = total > 0 ? Math.round((caughtCount / total) * 100) : 0;
+            caughtCountText.textContent = caughtCount;
+            totalCountText.textContent = total;
+            percentText.textContent = `${percent}%`;
+            progressBar.style.width = `${percent}%`;
+        }
+
+        async function renderGrid() {
+            regionTitle.textContent = currentRegionConfig.name;
+            regionBadge.textContent = currentRegionConfig.gen;
+            pokemonGrid.innerHTML = '';
+            let visibleCount = 0;
+
+            const displayNamePromises = currentRegionList.map(async p => {
+                if (currentLang === 'de') {
+                    return await fetchGermanName(p.natId, p.defaultName);
+                }
+                return formatName(p.defaultName);
+            });
+
+            const displayNames = await Promise.all(displayNamePromises);
+
+            currentRegionList.forEach((p, idx) => {
+                const name = displayNames[idx];
+                const key = `${currentRegionConfig.id}-${p.regNo}`;
+                const isCaught = !!caughtState[key];
+
+                if (currentFilter === 'caught' && !isCaught) return;
+                if (currentFilter === 'uncaught' && isCaught) return;
+
+                const formattedNum = String(p.regNo).padStart(3, '0');
+                const searchLower = searchQuery.toLowerCase();
+                if (searchQuery && !name.toLowerCase().includes(searchLower) && !formattedNum.includes(searchLower)) {
+                    return;
+                }
+
+                visibleCount++;
+
+                const card = document.createElement('div');
+                card.className = `group relative bg-white dark:bg-slate-900 border ${
+                    isCaught 
+                    ? 'border-emerald-500/50 bg-emerald-50/20 dark:bg-emerald-950/10' 
+                    : 'border-slate-200 dark:border-slate-800'
+                } rounded-2xl p-3 sm:p-4 flex flex-col justify-between transition-all duration-200 hover:shadow-lg hover:-translate-y-1 cursor-pointer select-none`;
+
+                card.innerHTML = `
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs font-black tracking-wider text-slate-400 group-hover:text-pokeRed-500 transition">#${formattedNum}</span>
+                            <button class="catch-toggle-btn p-1.5 rounded-full ${
+                                isCaught 
+                                ? 'bg-emerald-500 text-white' 
+                                : 'bg-slate-100 dark:bg-slate-800 text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
+                            } transition" data-key="${key}">
+                                <i data-lucide="${isCaught ? 'check' : 'circle'}" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+
+                        <div class="relative w-full aspect-square flex items-center justify-center my-1 bg-slate-50 dark:bg-slate-800/40 rounded-xl p-2 group-hover:bg-slate-100 dark:group-hover:bg-slate-800/80 transition">
+                            <img src="${getSpriteUrl(p.natId)}" 
+                                 onerror="this.src='${getFallbackSprite(p.natId)}'" 
+                                 alt="${name}" 
+                                 class="w-full h-full object-contain filter drop-shadow-md transition-transform duration-300 group-hover:scale-110 ${isCaught ? '' : 'grayscale opacity-75'}"
+                                 loading="lazy">
+                        </div>
+
+                        <h3 class="font-extrabold text-sm text-slate-800 dark:text-slate-100 capitalize truncate mt-2">${name}</h3>
+                        <span class="text-[11px] text-slate-400 font-medium">Nat. #${p.natId}</span>
+                    </div>
+
+                    <div class="mt-3 pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-[11px] font-bold text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300">
+                        <span class="flex items-center gap-1">
+                            <i data-lucide="map-pin" class="w-3.5 h-3.5"></i> Fundort
+                        </span>
+                        <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+                    </div>
+                `;
+
+                card.addEventListener('click', (e) => {
+                    if (e.target.closest('.catch-toggle-btn')) return;
+                    openLocationModal({ ...p, name: name });
+                });
+
+                const catchBtn = card.querySelector('.catch-toggle-btn');
+                catchBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    toggleCaught(key);
+                });
+
+                pokemonGrid.appendChild(card);
+            });
+
+            if (visibleCount === 0) {
+                emptyState.classList.remove('hidden');
+            } else {
+                emptyState.classList.add('hidden');
+            }
+
+            if (window.lucide) lucide.createIcons();
+            updateProgress();
+        }
+
+        async function loadSelectedRegion(regionId) {
+            const config = POKEDEX_DEFINITIONS.find(r => r.id === regionId);
+            if (!config) return;
+            currentRegionConfig = config;
+            currentRegionList = await fetchRegionPokedex(config.apiDex);
+            await renderGrid();
+        }
+
+        function toggleCaught(key) {
+            caughtState[key] = !caughtState[key];
+            saveState();
+            renderGrid();
+
+            if (activeModalPokemon) {
+                const currentKey = `${currentRegionConfig.id}-${activeModalPokemon.regNo}`;
+                if (currentKey === key) {
+                    updateModalCatchBtnState(!!caughtState[key]);
+                }
+            }
+        }
+
+        async function openLocationModal(pokemon) {
+            activeModalPokemon = pokemon;
+            const key = `${currentRegionConfig.id}-${pokemon.regNo}`;
+            const isCaught = !!caughtState[key];
+
+            modalDexNum.textContent = `#${String(pokemon.regNo).padStart(3, '0')}`;
+            modalName.textContent = pokemon.name;
+            modalNatId.textContent = `National-ID: #${pokemon.natId}`;
+            modalSprite.src = getSpriteUrl(pokemon.natId);
+            modalSprite.onerror = () => { modalSprite.src = getFallbackSprite(pokemon.natId); };
+
+            modalLocations.innerHTML = '';
+            modalLocationsLoading.classList.remove('hidden');
+            updateModalCatchBtnState(isCaught);
+
+            locationModal.classList.remove('hidden');
+            setTimeout(() => {
+                const container = locationModal.querySelector('.modal-container');
+                locationModal.classList.add('opacity-100');
+                container.classList.remove('scale-95', 'opacity-0');
+                container.classList.add('scale-100', 'opacity-100');
+            }, 10);
+
+            const rawEncounters = await fetchPokemonEncounters(pokemon.natId);
+            const filteredEncounters = filterEncountersForRegion(rawEncounters, currentRegionConfig.versions);
+            modalLocationsLoading.classList.add('hidden');
+
+            if (filteredEncounters.length > 0) {
+                modalLocations.innerHTML = filteredEncounters.map(enc => `
+                    <div class="flex items-start gap-2 text-xs text-slate-700 dark:text-slate-300 bg-slate-50 dark:bg-slate-800/80 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800 font-medium">
+                        <i data-lucide="compass" class="w-4 h-4 text-pokeRed-500 shrink-0 mt-0.5"></i>
+                        <div>
+                            <span class="font-bold block capitalize text-slate-900 dark:text-white">${enc.area}</span>
+                            <span class="text-[11px] text-slate-400">Editionen: ${enc.versions}</span>
+                        </div>
+                    </div>
+                `).join('');
+            } else {
+                modalLocations.innerHTML = `
+                    <div class="text-xs text-slate-500 bg-slate-50 dark:bg-slate-800/40 p-3 rounded-xl border border-slate-100 dark:border-slate-800 text-center font-medium">
+                        Keine Wild-Fundorte in den Editionen dieser Region verzeichnet (z. B. Tausch, Entwicklung, Starter oder Event).
+                    </div>
+                `;
+            }
+
+            if (window.lucide) lucide.createIcons();
+        }
+
+        function closeModal() {
+            const container = locationModal.querySelector('.modal-container');
+            container.classList.remove('scale-100', 'opacity-100');
+            container.classList.add('scale-95', 'opacity-0');
+            locationModal.classList.remove('opacity-100');
+            setTimeout(() => {
+                locationModal.classList.add('hidden');
+                activeModalPokemon = null;
+            }, 200);
+        }
+
+        function updateModalCatchBtnState(isCaught) {
+            if (isCaught) {
+                modalCatchToggleBtn.className = "w-full py-2.5 px-4 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition bg-emerald-500 hover:bg-emerald-600 text-white shadow-md shadow-emerald-500/20";
+                modalCatchToggleText.textContent = "Als Gefangen markiert";
+            } else {
+                modalCatchToggleBtn.className = "w-full py-2.5 px-4 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition bg-pokeRed-600 hover:bg-pokeRed-700 text-white shadow-md shadow-pokeRed-600/20";
+                modalCatchToggleText.textContent = "Als Gefangen markieren";
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            loadState();
+            initRegionsDropdown();
+            
+            langSelect.value = currentLang;
+
+            loadSelectedRegion(POKEDEX_DEFINITIONS[0].id);
+
+            regionSelect.addEventListener('change', (e) => loadSelectedRegion(e.target.value));
+            
+            langSelect.addEventListener('change', async (e) => {
+                currentLang = e.target.value;
+                saveLang(currentLang);
+                await renderGrid();
+                showToast(`Sprache geändert: ${currentLang === 'de' ? 'Deutsch' : 'English'}`);
+            });
+
+            searchInput.addEventListener('input', (e) => { searchQuery = e.target.value; renderGrid(); });
+
+            filterBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    filterBtns.forEach(b => b.className = "filter-btn flex-1 sm:flex-none px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition");
+                    btn.className = "filter-btn flex-1 sm:flex-none px-3 py-1.5 rounded-lg text-xs font-semibold transition bg-pokeRed-500 text-white shadow-sm";
+                    currentFilter = btn.dataset.filter;
+                    renderGrid();
+                });
+            });
+
+            document.getElementById('exportBtn').addEventListener('click', exportData);
+            document.getElementById('importInput').addEventListener('change', importData);
+            closeModalBtn.addEventListener('click', closeModal);
+            locationModal.addEventListener('click', (e) => { if (e.target === locationModal) closeModal(); });
+
+            modalCatchToggleBtn.addEventListener('click', () => {
+                if (activeModalPokemon) {
+                    const key = `${currentRegionConfig.id}-${activeModalPokemon.regNo}`;
+                    toggleCaught(key);
+                }
+            });
+
+            [document.getElementById('themeToggleBtn'), document.getElementById('themeToggleBtnMobile')].forEach(btn => {
+                btn?.addEventListener('click', toggleTheme);
+            });
+        });
+    </script>
+</body>
+</html>
